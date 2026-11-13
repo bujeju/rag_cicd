@@ -1,0 +1,38 @@
+# PR 을 올리면 실행: 테스트 + RAG 평가. 실패하면 병합하지 않는다.
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-and-eval:
+    runs-on: ubuntu-latest
+    env:
+      LLM_PROVIDER: fake            # CI 는 키 없이 검색 품질만 평가
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: 의존성 설치
+        run: pip install -r requirements.txt
+
+      - name: 인덱스 생성
+        run: python scripts/build_index.py
+
+      - name: 단위 테스트
+        run: pytest -q
+
+      - name: RAG 평가 (기준 미달 시 실패)
+        run: python eval/run_eval.py
+
+      - name: 평가 리포트 업로드
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-report
+          path: eval/report.json

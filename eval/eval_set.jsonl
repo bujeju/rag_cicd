@@ -1,0 +1,10 @@
+{"question": "반품은 며칠 안에 신청해야 하나요?", "expected_source": "refund.md", "expected_keywords": ["14일"]}
+{"question": "단순 변심으로 반품하면 배송비는 얼마예요?", "expected_source": "refund.md", "expected_keywords": ["6,000"]}
+{"question": "환불은 언제 처리되나요?", "expected_source": "refund.md", "expected_keywords": ["3일"]}
+{"question": "오후 3시에 주문하면 언제 출고돼요?", "expected_source": "shipping.md", "expected_keywords": ["다음 영업일"]}
+{"question": "제주도 배송비 추가되나요?", "expected_source": "shipping.md", "expected_keywords": ["3,000"]}
+{"question": "무료배송 기준 금액이 얼마인가요?", "expected_source": "shipping.md", "expected_keywords": ["5만"]}
+{"question": "제품 무상 보증 기간은 얼마나 되나요?", "expected_source": "warranty.md", "expected_keywords": ["1년"]}
+{"question": "A/S 접수는 어디서 하나요?", "expected_source": "warranty.md", "expected_keywords": ["1588"]}
+{"question": "골드 등급 적립률은 몇 퍼센트인가요?", "expected_source": "membership.md", "expected_keywords": ["3%"]}
+{"question": "적립금 유효기간이 있나요?", "expected_source": "membership.md", "expected_keywords": ["1년"]}

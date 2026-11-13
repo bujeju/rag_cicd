@@ -1,0 +1,11 @@
+.git
+.github
+.venv
+__pycache__
+*.pyc
+index/
+eval/report.json
+.env
+k8s/
+tests/
+monitoring/

@@ -1,0 +1,20 @@
+# 가비아 클러스터에 Ingress Controller 가 있는지 먼저 확인:
+#   kubectl get ingressclass
+# 없으면 이 파일은 지우고 service.yaml 의 type: LoadBalancer 사용
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rag-app
+spec:
+  ingressClassName: nginx             # kubectl get ingressclass 결과로 변경
+  rules:
+    - host: HOST_PLACEHOLDER          # CD 워크플로가 dev/prod 도메인으로 치환
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: rag-app
+                port:
+                  number: 80

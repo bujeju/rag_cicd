@@ -1,0 +1,10 @@
+# 로컬(docker compose)용: rag-app 컨테이너를 직접 수집
+global:
+  scrape_interval: 5s
+scrape_configs:
+  - job_name: rag-app
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["rag-app:8000"]
+        labels:
+          namespace: local   # 대시보드의 namespace 드롭다운이 비지 않도록 (클러스터에서는 dev/prod)

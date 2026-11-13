@@ -1,0 +1,12 @@
+# 이미지를 다시 빌드하지 않고 바꿀 수 있는 설정
+# 바꾼 뒤: kubectl apply -f k8s/configmap.yaml -n dev
+#          kubectl rollout restart deployment/rag-app -n dev
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rag-config
+data:
+  LLM_PROVIDER: "fake"        # 키를 Secret에 넣었다면 "openai" 로 변경
+  LLM_MODEL: "gpt-4o-mini"
+  PROMPT_VERSION: "v1"
+  TOP_K: "3"

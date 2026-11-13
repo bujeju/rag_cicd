@@ -1,0 +1,52 @@
+# namespace 는 적지 않는다 → kubectl apply -f k8s/ -n dev  /  -n prod 로 구분
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rag-app
+  labels:
+    app: rag-app
+spec:
+  replicas: 2                       # 2개여야 롤링 업데이트가 눈에 보인다
+  revisionHistoryLimit: 5           # 롤백 가능한 과거 버전 수
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0             # 새 파드가 준비될 때까지 기존 파드 유지
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: rag-app
+  template:
+    metadata:
+      labels:
+        app: rag-app
+      annotations:                    # Prometheus 가 이 파드의 /metrics 를 수집
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      # GHCR 이미지를 private 으로 두면 주석 해제 (README 참고)
+      # imagePullSecrets:
+      #   - name: ghcr-pull
+      containers:
+        - name: rag-app
+          image: IMAGE_PLACEHOLDER    # CD 워크플로가 ghcr.io/<owner>/<repo>:<sha> 로 치환
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: rag-config
+            - secretRef:
+                name: rag-secret
+                optional: true         # Secret 없어도 fake 모드로 기동
+          readinessProbe:              # 준비되기 전엔 트래픽을 받지 않음
+            httpGet: { path: /health, port: 8000 }
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:               # 죽으면 재시작
+            httpGet: { path: /health, port: 8000 }
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits:   { cpu: 500m, memory: 512Mi }

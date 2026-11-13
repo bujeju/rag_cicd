@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rag-app
+spec:
+  selector:
+    app: rag-app
+  ports:
+    - port: 80
+      targetPort: 8000
+  # Ingress Controller 가 없고 LoadBalancer 를 지원하는 클러스터라면 아래 주석 해제
+  # type: LoadBalancer

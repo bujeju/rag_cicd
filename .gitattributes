@@ -1,0 +1,2 @@
+# Windows에서 작업해도 리눅스 컨테이너/CI에서 문제 없도록 LF 고정
+* text=auto eol=lf
