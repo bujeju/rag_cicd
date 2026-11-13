@@ -177,6 +177,7 @@ Grafana **실행 중인 버전** 표와 **버전별 요청 수** 그래프에서
 
 | 증상 | 확인할 것 |
 |---|---|
+| CD의 kubectl이 `localhost:8080 refused` | `KUBE_CONFIG` Secret 미등록 또는 base64 값 오류 (kubeconfig가 비면 kubectl은 localhost:8080에 접속한다) |
 | CD의 `kubectl cluster-info` 실패 | GitHub Actions에서 클러스터 API 서버에 접근 가능한지 (공인 엔드포인트, IP 허용 목록) |
 | 파드가 `ImagePullBackOff` | GHCR 패키지 Public 여부 또는 `ghcr-pull` Secret |
 | 파드가 `CrashLoopBackOff` | `kubectl logs <pod> -n dev`, ConfigMap 값 오타 |

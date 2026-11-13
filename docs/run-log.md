@@ -191,3 +191,57 @@ python scripts/load_test.py http://localhost:8000 120
 ### 브라우저 확인과 정리
 - 사용자가 http://localhost:3000 → Dashboards → LLMOps → **RAG LLMOps**에서 패널이 정상으로 보이는 것을 확인함 (부하 발생기를 돌리는 동안).
 - `docker compose down` → 컨테이너와 네트워크 정리 완료.
+
+---
+
+## 단계 3. Git / GitHub (실습 2의 1~3)
+
+### 첫 커밋
+```powershell
+git config --local user.name "bujeju"
+git config --local user.email "<GitHub noreply 이메일>"   # 공개 저장소라 실제 이메일 대신 noreply 사용
+git add docs/screenshots
+git commit -m "init: LLMOps RAG lab skeleton"
+```
+- 결과: `bbed9d5 init: LLMOps RAG lab skeleton` (44 files)
+- 막힌 점: 새 PC에서는 `user.name`/`user.email`이 비어 있어 커밋이 안 된다. 공개 저장소는 커밋 이메일이 그대로 공개되므로
+  GitHub → Settings → Emails의 `<ID>+<username>@users.noreply.github.com`를 권장.
+
+### 저장소 생성과 push
+```powershell
+gh auth login --hostname github.com --git-protocol https --web   # 처음엔 "not logged into any GitHub hosts"
+gh auth status                                                   # ✓ Logged in ... scopes: repo, workflow, ...
+gh repo view bujeju/rag_cicd                                     # 없음 확인 (기존 저장소와 이름 충돌 방지)
+gh repo create rag_cicd --public --source . --remote origin
+git remote -v                                                    # origin https://github.com/bujeju/rag_cicd.git (push 전 확인)
+git push -u origin main
+```
+- PowerShell에서 `gh api user --jq '"\(.login)"'` 같은 jq 문자열 보간은 따옴표 처리 때문에 실패한다 → `--jq '.login, .id'`처럼 단순하게 쓴다.
+
+### main push로 CD 자동 실행 (run 43365630369)
+| job | 결과 |
+|---|---|
+| test-and-eval | ✓ `5 passed`, `retrieval_hit_rate = 1.0 (기준 0.8)`, `answer_hit_rate = 1.0 (기준 0.7)` |
+| build-and-push | ✓ `ghcr.io/bujeju/rag_cicd:bbed9d5` |
+| deploy-dev | ✗ `kubeconfig 설정` 단계: `The connection to the server localhost:8080 was refused` |
+| deploy-prod | 건너뜀 |
+
+- **원인**: `KUBE_CONFIG` Secret이 아직 없다 (단계 5에서 등록). kubeconfig가 비면 kubectl은 기본값 `localhost:8080`에 접속하려 한다.
+  → 이 에러 메시지를 보면 "Secret 미등록/잘못된 base64"를 먼저 의심하면 된다.
+- 경고: Actions의 Node.js 20 deprecation 안내가 나오지만 실행에는 영향 없음.
+
+### environments와 main 브랜치 보호 (gh api)
+```bash
+gh api -X PUT repos/bujeju/rag_cicd/environments/dev
+gh api -X PUT repos/bujeju/rag_cicd/environments/production
+gh api -X PUT repos/bujeju/rag_cicd/branches/main/protection --input bp.json
+# bp.json: required_status_checks.contexts=["test-and-eval"], required_approving_review_count=1, enforce_admins=false
+```
+- 결과: `dev`, `production` 생성 / `{"approvals":1,"checks":["test-and-eval"],"enforce_admins":false}`
+- 주의: PR 작성자는 자기 PR을 승인할 수 없다. 혼자 실습하면 승인 1이 병합을 막으므로 짝이 승인하거나,
+  관리자는 `enforce_admins=false`라서 `gh pr merge --admin`으로 우회할 수 있다 (교안에서는 우회하지 않는 흐름을 권장).
+- production required reviewer: 짝이 없어 본인 계정(`bujeju`)으로 지정, `prevent_self_review=false` (본인이 배포 승인 가능).
+
+---
+
+## 단계 4. CI 동작 확인 (실습 4-3 축소판)
