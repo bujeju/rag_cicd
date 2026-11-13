@@ -47,8 +47,8 @@
 - `git init -b main` → 첫 커밋 ("init: LLMOps RAG lab skeleton").
 - `gh auth status` 확인 → 사용자에게 **저장소 이름과 공개 여부를 물은 뒤** `gh repo create`로 생성하고 push.
 - `gh`로 할 수 있으면 설정:
-  - environments: `dev`, `production` (production의 required reviewer는 사용자에게 짝의 GitHub ID를 물어 설정)
-  - main 브랜치 보호: PR 필수, 승인 1, status check `test-and-eval` 필수
+  - environments: `dev`, `production` (혼자 실습: production의 required reviewer는 사용자 본인 계정, prevent_self_review 끔)
+  - main 브랜치 보호: PR 필수, 필수 승인 0, status check `test-and-eval` 필수
 - `gh`로 안 되는 항목은 웹에서 할 순서를 정리해서 알려준다.
 
 ### 단계 4. CI 동작 확인 (README 실습 4-3 축소판)
