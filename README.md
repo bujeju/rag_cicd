@@ -1,12 +1,12 @@
 # LLMOps 실습: RAG 에이전트를 Git → CI/CD → 쿠버네티스(가비아)로
 
 목표는 어려운 AI가 아니라 **"수정 → 검증 → 배포 → 롤백" 한 바퀴**를 직접 돌려 보는 것입니다.
-2인 1조로 컨테이너 클러스터 1개를 함께 사용합니다.
+혼자서 컨테이너 클러스터 1개를 사용해 진행합니다.
 
 ```
-[로컬 수정] → git push (feature 브랜치) → PR → 짝 리뷰 + CI(테스트·RAG 평가)
+[로컬 수정] → git push (feature 브랜치) → PR → 셀프 리뷰 + CI(테스트·RAG 평가)
    → main 병합 → CD: 이미지 빌드(태그=커밋해시) → GHCR push
-   → dev 네임스페이스 자동 배포 → 짝 승인 → prod 배포
+   → dev 네임스페이스 자동 배포 → 본인 승인 → prod 배포
    → Grafana 대시보드로 버전·지연시간·검색 품질 관찰
    → 문제 시 kubectl rollout undo
 ```
@@ -30,11 +30,13 @@
 | `scripts/load_test.py` | 그래프를 움직이기 위한 간단한 부하 발생기 |
 | `.github/workflows/` | `ci.yml`(PR 검사), `cd.yml`(빌드·배포) |
 
-## 역할 (2인 1조)
+## 진행 방식 (혼자 실습)
 
-- **A – 앱 담당**: RAG, 에이전트, 프롬프트, 평가셋
-- **B – 운영 담당**: Dockerfile, K8s, GitHub Actions, Secret, 로그·롤백
-- 서로의 PR을 리뷰하고, **실습 4부터 역할을 바꿉니다.**
+한 사람이 두 관점을 모두 다룹니다.
+
+- **앱 관점**: RAG, 에이전트, 프롬프트, 평가셋
+- **운영 관점**: Dockerfile, K8s, GitHub Actions, Secret, 로그·롤백
+- PR은 직접 열고 Files changed를 셀프 리뷰합니다. 병합 조건은 **CI(`test-and-eval`) 통과**이고, 승인 인원은 0명입니다.
 
 ---
 
@@ -86,11 +88,11 @@ python scripts/load_test.py http://localhost:8000 120
 | 토큰 사용량 | 비용 추적 (fake 모드는 0) |
 | 에러율 / 상태별 요청 | LLM API 장애 감지 |
 
-## 실습 2. GitHub 저장소와 클러스터 연결 (B 주도)
+## 실습 2. GitHub 저장소와 클러스터 연결
 
-1. GitHub에 저장소를 만들고 push, 짝을 Collaborator로 초대
-2. **Settings → Branches**: `main` 보호(PR 필수, 승인 1명, CI 통과 필수)
-3. **Settings → Environments**: `dev`, `production` 생성 → `production`의 Required reviewers에 짝 지정
+1. GitHub에 저장소를 만들고 push
+2. **Settings → Branches**: `main` 보호(PR 필수, 필수 승인 0명, CI `test-and-eval` 통과 필수)
+3. **Settings → Environments**: `dev`, `production` 생성 → `production`의 Required reviewers에 **본인 계정** 지정 (Prevent self-review는 끈 상태)
 4. **Settings → Secrets and variables → Actions**
    - Secret `KUBE_CONFIG`: 가비아에서 받은 kubeconfig를 base64로 인코딩한 값
      - Mac·Linux: `base64 -w0 kubeconfig.yaml`
@@ -112,7 +114,7 @@ python scripts/load_test.py http://localhost:8000 120
 
 ## 실습 3. 첫 배포 (v1)
 
-`main`에 push하면 Actions의 **CD**가 실행됩니다. dev 배포가 끝나면 `production` 단계에서 짝이 **Approve** 합니다.
+`main`에 push하면 Actions의 **CD**가 실행됩니다. dev 배포가 끝나면 `production` 단계에서 본인이 **Review deployments → Approve** 를 누릅니다.
 
 ```bash
 kubectl get pods -n dev
@@ -134,9 +136,9 @@ python scripts/load_test.py http://localhost:8000 300
 대시보드 위쪽 `namespace` 선택으로 dev / prod를 나눠 봅니다.
 Prometheus는 디스크 없이 메모리에만 저장하므로 재시작하면 데이터가 초기화됩니다(실습용).
 
-## 실습 4. 수정 → 재배포 시나리오 (역할 교대)
+## 실습 4. 수정 → 재배포 시나리오
 
-모든 수정은 **feature 브랜치 → PR → 짝 리뷰 → 병합** 순서로 합니다.
+모든 수정은 **feature 브랜치 → PR → 셀프 리뷰 + CI 통과 → 병합** 순서로 합니다.
 
 | # | 수정 내용 | 관찰 포인트 |
 |---|---|---|

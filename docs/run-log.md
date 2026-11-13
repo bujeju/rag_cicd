@@ -245,3 +245,49 @@ gh api -X PUT repos/bujeju/rag_cicd/branches/main/protection --input bp.json
 ---
 
 ## 단계 4. CI 동작 확인 (실습 4-3 축소판)
+
+### 4-1. `test/ci-check` → PR #1 (통과)
+```bash
+git switch -c test/ci-check     # README "자주 막히는 곳"에 localhost:8080 행 추가 + run-log
+git push -u origin test/ci-check
+gh pr create --base main --head test/ci-check ...
+gh pr checks 1 --watch
+```
+- `test-and-eval  pass  28s` → `5 passed`, `retrieval_hit_rate = 1.0 (기준 0.8)`, `answer_hit_rate = 1.0 (기준 0.7)`
+- 당시 승인 1명 필수 + 짝이 없어 `gh pr merge 1 --admin --squash --delete-branch`로 병합 (`2e32153`).
+  → 이 경험으로 혼자 실습용 설정으로 변경 (아래 4-3).
+
+### 4-2. `test/break-eval` → PR #2 (실패 확인 후 닫음)
+```bash
+git switch main && git switch -c test/break-eval
+git rm data/docs/refund.md && git commit && git push -u origin test/break-eval
+gh pr create ... ; gh pr checks 2 --watch
+gh pr close 2 --delete-branch
+```
+- `test-and-eval  fail  26s`. 그런데 **평가 단계가 아니라 그 앞의 pytest에서 먼저 실패**했다:
+  ```
+  E  AssertionError: assert 'refund.md' in ['membership.md', 'warranty.md', 'warranty.md']
+  FAILED tests/test_api.py::test_chat_returns_sources
+  1 failed, 4 passed
+  ```
+  → `RAG 평가` 스텝은 실행되지 않음(앞 스텝 실패 시 skip). Actions 로그에 평가 점수가 남지 않는다.
+- 같은 브랜치에서 로컬로 평가를 돌려 점수 확인:
+  ```
+  retrieval_hit_rate = 0.7 (기준 0.8)
+  answer_hit_rate    = 0.8 (기준 0.7)
+  ❌ 평가 기준 미달 → 배포 중단
+  ```
+  → 평가 단계까지 갔어도 retrieval 기준 미달로 실패했을 것.
+- 주의: break 브랜치에서 `build_index.py`를 돌리면 로컬 `index/`가 refund.md 없이 만들어진다.
+  main으로 돌아온 뒤 **반드시 인덱스를 다시 생성** (chunk 6개 → 8개로 복구 확인).
+
+### 4-3. 혼자 실습으로 전환 (브랜치 `docs/solo-lab` → PR)
+- 브랜치 보호 승인 인원 1 → 0 (CI 필수는 유지):
+  ```bash
+  gh api -X PATCH repos/bujeju/rag_cicd/branches/main/protection/required_pull_request_reviews -F required_approving_review_count=0
+  # {"approvals":0}, checks: ["test-and-eval"], PR 필수 유지
+  ```
+- production 승인자: `bujeju` 유지 (본인이 Review deployments → Approve).
+- README: "2인 1조" → 혼자 진행, "역할(A/B)" 절 → "진행 방식(혼자 실습)", "짝 리뷰/짝 승인/짝 초대/역할 교대/B 주도" 제거·변경,
+  브랜치 보호 설명을 "필수 승인 0명, CI 통과 필수"로 수정.
+- CLAUDE.md 단계 3: reviewer = 사용자 본인, 승인 0으로 수정.
